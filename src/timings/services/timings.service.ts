@@ -1,16 +1,13 @@
 import { HttpService } from "@nestjs/axios";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { map, Observable, retry } from "rxjs";
-import * as htmlparser2 from "htmlparser2";
-import { DOMParser } from "xmldom";
 import * as cheerio from "cheerio";
+import { map, Observable, retry } from "rxjs";
 import { AzaanTimeMap, IqamahTimeMap } from "../constants/timings.const";
-import { PrayerTexts } from "../enums/PrayerTexts.enum";
-import { PrayerTimings } from "../models/PrayerTimings";
-import { IPrayerTimings } from "../interfaces/IPrayerTimings.interface";
-import { IIqamahTimings } from "../interfaces/IIqamahTimings.interface";
 import { IAzaanTimings } from "../interfaces/IAzaanTimings.interface";
+import { IIqamahTimings } from "../interfaces/IIqamahTimings.interface";
+import { IPrayerTimings } from "../interfaces/IPrayerTimings.interface";
+import { PrayerTimings } from "../models/PrayerTimings";
 
 @Injectable()
 export class TimingsService {
