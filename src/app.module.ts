@@ -9,7 +9,7 @@ import { ConfigModule } from "@nestjs/config";
 	imports: [
 		TimingsModule,
 		FileUploadModule,
-		ConfigModule.forRoot({ envFilePath:`.env${process.env.NODE_ENV=='production' ? '.' + process.env.NODE_ENV : ''}`,isGlobal: true })
+		ConfigModule.forRoot({ envFilePath:`.env`,isGlobal: true })
 	],
 	controllers: [AppController],
 	providers: [AppService]
