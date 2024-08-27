@@ -1,4 +1,27 @@
 {
-  "singleQuote": true,
-  "trailingComma": "all"
-}
+    "singleQuote": false,
+    "semi": true,
+    "trailingComma": "none",
+    "printWidth": 80,
+    "useTabs": true,
+    "tabWidth": 2,
+    "quoteProps": "consistent",
+    "jsxSingleQuote": false,
+    "bracketSpacing": true,
+    "bracketSameLine": false,
+    "arrowParens": "always",
+    "endOfLine": "lf",
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ],
+    "indentationRules": {
+      "increaseIndentPattern": "^((?!\\/\\/).)*(\\{[^}\"'`]*|\\([^)\"'`]*|\\[[^\\]\"'`]*)$",
+      "decreaseIndentPattern": "^((?!.*?\\/\\*).*\\*/)?\\s*[\\)\\}\\]].*$"
+    }
+  }
+  
