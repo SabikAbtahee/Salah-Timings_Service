@@ -16,7 +16,7 @@ export class TimingsService {
 		private readonly httpService: HttpService
 	) {}
 
-	getTimings(): Observable<IPrayerTimings> {
+    getTimings(): Observable<IPrayerTimings> {
 		const timingsUrl = this.configService.get<string>("PRAYER_TIMINGS_URL");
 		return this.httpService.get(timingsUrl, { responseType: "text" }).pipe(
 			retry(3),
