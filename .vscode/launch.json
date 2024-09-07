@@ -1,21 +1,16 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "type": "node",
-        "request": "launch",
-        "name": "Debug NestJS",
-        "program": "${workspaceFolder}/src/main.ts",
-        "preLaunchTask": "npm: build",
-        "runtimeArgs": [
-          "--nolazy",
-          "-r",
-          "ts-node/register"
-        ],
-        "outFiles": [
-          "${workspaceFolder}/dist/**/*.js"
-        ],
-        "sourceMaps": true
-      }
-    ]
-  }
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug Nest",
+			"skipFiles": ["<node_internals>/**"],
+			"preLaunchTask": "npm: build",
+			"program": "${workspaceFolder}/src/main.ts",
+			"console": "integratedTerminal",
+            "restart": true,
+            "runtimeExecutable": "nodemon"
+		}
+	]
+}
