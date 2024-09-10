@@ -4,26 +4,31 @@ import * as moment from "moment-timezone";
 
 @Injectable()
 export class CalendarService {
+	ICAL_URL =
+		"https://outlook.office365.com/owa/calendar/b0ed013c1bce4917850159974bea0538@ialfm.org/f687939f26394711adecfb0fa055bea914970036588051023950/calendar.ics"; // Replace with your actual iCal URL
 	constructor() {}
 
 	async getCalendarEvents(url?: string): Promise<any> {
-		const ICAL_URL =
-			url ??
-			"https://outlook.office365.com/owa/calendar/b0ed013c1bce4917850159974bea0538@ialfm.org/f687939f26394711adecfb0fa055bea914970036588051023950/calendar.ics"; // Replace with your actual iCal URL
-		const events = await this.getDataFromUrl(ICAL_URL);
+		const events = await this.getDataFromUrl(this.ICAL_URL);
 		const groupedEvents = {};
 		const now = moment().tz("America/Chicago").startOf("day");
+
 		Object.values(events)
 			.filter((event) => event.type === "VEVENT")
 			.forEach((event) => {
 				let eventStart = moment(event.start).tz("America/Chicago", true);
 				let eventEnd = moment(event.end).tz("America/Chicago", true);
-				if (event.start && event.end) {
+
+				if (
+					event.start &&
+					event.end &&
+					event.start["dateOnly"] &&
+					event.end["dateOnly"]
+				) {
 					eventStart = moment(event.start).tz("America/Chicago").startOf("day");
 					eventEnd = moment(event.end).tz("America/Chicago").endOf("day");
 				}
 				if (event.rrule) {
-					// Handle recurring events
 					const ruleOccurrences = event.rrule.between(
 						now.toDate(),
 						moment().add(6, "months").toDate()
@@ -31,12 +36,11 @@ export class CalendarService {
 					ruleOccurrences.forEach((occurrence) => {
 						const occurrenceStart = moment(occurrence)
 							.tz("America/Chicago")
-							.add(5, "hours"); // Add 5 hours
+							.add(5, "hours");
 						const occurrenceEnd = moment(occurrenceStart).add(
 							moment.duration(event["duration"])
 						);
 
-						// Adjust the date by adding one day
 						const adjustedDate = occurrenceStart
 							.clone()
 							.add(1, "day")
@@ -55,9 +59,7 @@ export class CalendarService {
 						}
 					});
 				} else {
-					// Handle non-recurring events
 					if (eventStart.isSameOrAfter(now)) {
-						// Adjust the date by adding one day
 						const adjustedDate = eventStart
 							.clone()
 							.add(1, "day")
@@ -75,23 +77,10 @@ export class CalendarService {
 						});
 					}
 				}
-				Object.keys(groupedEvents).forEach((date) => {
-					groupedEvents[date].sort(
-						(a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
-					);
-				});
-				return groupedEvents;
 			});
-
-		// Sort events within each day
 		Object.keys(groupedEvents).forEach((date) => {
 			groupedEvents[date].sort(
-				(
-					a: { start: string | number | Date },
-					b: { start: string | number | Date }
-				) => {
-					return new Date(a.start).getTime() - new Date(b.start).getTime();
-				}
+				(a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
 			);
 		});
 		return groupedEvents;
