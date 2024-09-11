@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import * as ical from "node-ical";
 import * as moment from "moment-timezone";
+import { DateTime } from "luxon";
+import { CalendarResponse } from "node-ical";
 
 @Injectable()
 export class CalendarService {
@@ -8,85 +10,71 @@ export class CalendarService {
 		"https://outlook.office365.com/owa/calendar/b0ed013c1bce4917850159974bea0538@ialfm.org/f687939f26394711adecfb0fa055bea914970036588051023950/calendar.ics"; // Replace with your actual iCal URL
 	constructor() {}
 
-	async getCalendarEvents(url?: string): Promise<any> {
-		const events = await this.getDataFromUrl(this.ICAL_URL);
-		const groupedEvents = {};
-		const now = moment().tz("America/Chicago").startOf("day");
-
-		Object.values(events)
-			.filter((event) => event.type === "VEVENT")
-			.forEach((event) => {
-				let eventStart = moment(event.start).tz("America/Chicago", true);
-				let eventEnd = moment(event.end).tz("America/Chicago", true);
-
-				if (
-					event.start &&
-					event.end &&
-					event.start["dateOnly"] &&
-					event.end["dateOnly"]
-				) {
-					eventStart = moment(event.start).tz("America/Chicago").startOf("day");
-					eventEnd = moment(event.end).tz("America/Chicago").endOf("day");
-				}
-				if (event.rrule) {
-					const ruleOccurrences = event.rrule.between(
-						now.toDate(),
-						moment().add(6, "months").toDate()
-					);
-					ruleOccurrences.forEach((occurrence) => {
-						const occurrenceStart = moment(occurrence)
-							.tz("America/Chicago")
-							.add(5, "hours");
-						const occurrenceEnd = moment(occurrenceStart).add(
-							moment.duration(event["duration"])
-						);
-
-						const adjustedDate = occurrenceStart
-							.clone()
-							.add(1, "day")
-							.format("YYYY-MM-DD");
-
-						if (occurrenceStart.isSameOrAfter(now)) {
-							if (!groupedEvents[adjustedDate]) {
-								groupedEvents[adjustedDate] = [];
-							}
-							groupedEvents[adjustedDate].push({
-								summary: event.summary || "No Title",
-								start: occurrenceStart.toISOString(),
-								end: occurrenceEnd.toISOString(),
-								location: event.location || "No Location"
-							});
-						}
-					});
-				} else {
-					if (eventStart.isSameOrAfter(now)) {
-						const adjustedDate = eventStart
-							.clone()
-							.add(1, "day")
-							.format("YYYY-MM-DD");
-
-						if (!groupedEvents[adjustedDate]) {
-							groupedEvents[adjustedDate] = [];
-						}
-
-						groupedEvents[adjustedDate].push({
-							summary: event.summary || "No Title",
-							start: eventStart.toISOString(),
-							end: eventEnd.toISOString(),
-							location: event.location || "No Location"
-						});
-					}
-				}
-			});
-		Object.keys(groupedEvents).forEach((date) => {
-			groupedEvents[date].sort(
-				(a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
-			);
-		});
-		return groupedEvents;
-	}
-
-	private async getDataFromUrl(url: string) {
+    async getCalendarEvents(url?: string) {
+        const events = await this.getDataFromUrl(this.ICAL_URL);
+        let allEvents = [];
+    
+        for (const key in events) {
+            const event = events[key];
+            if (event.type === "VEVENT") {
+                if (event.rrule) {
+                    allEvents = [...allEvents, ...this.processRecurringEvent(event)];
+                } else {
+                    allEvents.push(this.processSingleEvent(event));
+                }
+            }
+        }
+    
+        return this.sortAndFilterEventsByDate(allEvents);
+    }
+    
+    private processRecurringEvent(event) {
+        const occurrences = this.getOccurrences(event);
+        const startDate = DateTime.fromJSDate(event.start).toUTC();
+        const endDate = DateTime.fromJSDate(event.end).toUTC();
+        const duration = endDate.diff(startDate).as("milliseconds");
+    
+        return occurrences.map((occurrence) => {
+            const occurrenceStart = DateTime.fromJSDate(occurrence).toUTC();
+            const occurrenceEnd = occurrenceStart.plus({ milliseconds: duration });
+    
+            return {
+                summary: event.summary,
+                startDate: occurrenceStart.toISO(),
+                endDate: occurrenceEnd.toISO(),
+                isRecurring: true
+            };
+        });
+    }
+    
+    private processSingleEvent(event) {
+        const startDate = DateTime.fromJSDate(event.start).toUTC();
+        const endDate = DateTime.fromJSDate(event.end).toUTC();
+        return {
+            summary: event.summary,
+            startDate: startDate.toISO(),
+            endDate: endDate.toISO(),
+            isRecurring: false
+        };
+    }
+    
+    private getOccurrences(event) {
+        return event.rrule.all().map((date) =>
+            DateTime.fromJSDate(date)
+                .toUTC()
+                .setZone("local", { keepLocalTime: true })
+                .toJSDate()
+        );
+    }
+    
+    private sortAndFilterEventsByDate(events) {
+        const now = DateTime.now().toUTC();
+        return events
+            .filter(event => DateTime.fromISO(event.startDate).toUTC() >= now)
+            .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    }
+    
+	private async getDataFromUrl(url: string): Promise<CalendarResponse> {
 		try {
 			const events = await ical.async.fromURL(url);
 			return events;
@@ -94,4 +82,5 @@ export class CalendarService {
 			throw new NotFoundException(`URL invalid`);
 		}
 	}
+
 }
