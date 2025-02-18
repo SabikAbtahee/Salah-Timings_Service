@@ -59,12 +59,20 @@ export class CalendarService {
     }
     
     private getOccurrences(event) {
-        return event.rrule.all().map((date) =>
+        let occurrences = event.rrule.all().map((date) =>
             DateTime.fromJSDate(date)
                 .toUTC()
                 .setZone("local", { keepLocalTime: true })
                 .toJSDate()
         );
+        return occurrences.filter((x) => {
+            const year = x.getUTCFullYear();
+            const month = String(x.getUTCMonth() + 1).padStart(2, "0");
+            const day = String(x.getUTCDate()).padStart(2, "0");
+            const dateString = `${year}-${month}-${day}`;
+
+            return !event.exdate || !event.exdate[dateString];
+        });
     }
     
     private sortAndFilterEventsByDate(events) {
